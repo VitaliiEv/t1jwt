@@ -1,0 +1,398 @@
+openapi: 3.0.3
+info:
+  title: User management API
+  description: User management API
+  version: 0.0.1
+servers:
+  - url: 'http://localhost:8080/api/v1'
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: Аутентификация
+  - name: Users
+    description: Управление пользователями
+  - name: Roles
+    description: Управление ролями
+
+paths:
+  /auth/token:
+    post:
+      tags:
+        - Authentication
+      description: Получение токена
+      operationId: token
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      description: Обновление токена
+      operationId: refresh
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+  /user:
+    get:
+      x-spring-paginated: true
+      security:
+        - jwt: []
+      tags:
+        - Users
+      description: Список пользователей
+      operationId: users
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDtos'
+    post:
+      security:
+        - jwt: [ ]
+      tags:
+        - Users
+      description: Создать пользователя
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+    patch:
+      security:
+        - jwt: [ ]
+      tags:
+        - Users
+      description: Обновить пароль текущего пользователя
+      operationId: password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUserPasswordRequest'
+      responses:
+        '200':
+          description: Successful
+
+  /user/{username}:
+    get:
+      security:
+        - jwt: [ ]
+      tags:
+        - Users
+      description: Сведения о пользователе
+      operationId: user
+      parameters:
+        - $ref: '#/components/parameters/username'
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+    delete:
+      security:
+        - jwt: [ ]
+      tags:
+        - Users
+      description: Удалить пользователя
+      operationId: delete
+      parameters:
+        - $ref: '#/components/parameters/username'
+      responses:
+        '200':
+          description: Successful
+
+  /user/{username}/role:
+    get:
+      security:
+        - jwt: [ ]
+      tags:
+        - Users
+      description: Получить роли пользователя
+      operationId: userRole
+      parameters:
+        - $ref: '#/components/parameters/username'
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDtos'
+
+  /user/{username}/role/assign:
+    post:
+      security:
+        - jwt: [ ]
+      tags:
+        - Users
+        - Roles
+      description: Назначить роли пользователю
+      operationId: userAssignRole
+      parameters:
+        - $ref: '#/components/parameters/username'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleDtos'
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+  /user/{username}/role/revoke:
+    post:
+      security:
+        - jwt: [ ]
+      tags:
+        - Users
+        - Roles
+      description: Отозвать роли пользователю
+      operationId: userRevokeRole
+      parameters:
+        - $ref: '#/components/parameters/username'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleDtos'
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+  /role:
+    get:
+      x-spring-paginated: true
+      security:
+        - jwt: []
+      tags:
+        - Roles
+      description: Список ролей
+      operationId: roles
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDtos'
+    post:
+      security:
+        - jwt: [ ]
+      tags:
+        - Roles
+      description: Создать роль
+      operationId: createRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleDto'
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDto'
+
+  /role/{rolename}:
+    get:
+      security:
+        - jwt: []
+      tags:
+        - Roles
+      description: Удалить роль
+      operationId: role
+      parameters:
+        - $ref: '#/components/parameters/rolename'
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDto'
+    delete:
+      security:
+        - jwt: []
+      tags:
+        - Roles
+      description: Удалить роль
+      operationId: deleteRole
+      parameters:
+        - $ref: '#/components/parameters/rolename'
+      responses:
+        '200':
+          description: Successful
+
+
+components:
+  securitySchemes:
+    jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    username:
+      name: username
+      in: path
+      description: Имя пользователя
+      required: true
+      schema:
+        type: string
+    rolename:
+      name: rolename
+      in: path
+      description: Имя роля
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    TokenResponse:
+      type: object
+      description: Token
+      properties:
+        accessToken:
+          type: string
+          description: Access token
+        refreshToken:
+          type: string
+          description: Refresh token
+      required:
+        - accessToken
+        - refreshToken
+
+    TokenRequest:
+      type: object
+      description: Запрос токена
+      properties:
+        username:
+          type: string
+          description: Имя пользователя
+        password:
+          type: string
+          description: Пароль
+      required:
+        - username
+        - password
+
+    RefreshTokenRequest:
+      type: object
+      description: Запрос токена
+      properties:
+        refreshToken:
+          type: string
+          description: Токен
+      required:
+        - refreshToken
+
+    CreateUserRequest:
+      type: object
+      description: Запрос создания пользователя
+      properties:
+        username:
+          type: string
+          description: Имя
+        password:
+          type: string
+          format: password
+          description: Пароль
+      required:
+        - username
+        - password
+
+    ChangeUserPasswordRequest:
+      type: object
+      description: Запрос смены пароля пользователя
+      properties:
+        oldPassword:
+          type: string
+          format: password
+          description: Старый пароль
+        newPassword:
+          type: string
+          format: password
+          description: Новый пароль
+      required:
+        - username
+        - password
+
+    UserDtos:
+      type: array
+      description: Пользователи
+      items:
+        $ref: '#/components/schemas/UserDto'
+    UserDto:
+      type: object
+      description: Пользователь
+      properties:
+        username:
+          type: string
+          description: Имя
+        roles:
+          $ref: '#/components/schemas/RoleDtos'
+      required:
+        - username
+        - roles
+
+    RoleDtos:
+      type: array
+      description: Роли
+      items:
+        $ref: '#/components/schemas/RoleDto'
+    RoleDto:
+      type: object
+      description: Роль
+      properties:
+        name:
+          type: string
+          description: Наименование
+      required:
+        - name

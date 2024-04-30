@@ -1,3 +1,19 @@
 spring:
   application:
     name: t1jwt
+  datasource:
+    url: jdbc:postgresql://localhost:5432/t1jwt
+    username: postgres
+    password: postgres
+  jpa:
+    show-sql: true
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+      format-sql: true
+  data:
+    web:
+      max-page-size: 100
+application:
+  jwt:
+    secret-key: ${T1JWT_APPLICATION_JWT_SECRET_KEY:0123456789abcdefghijklmnopqrstuvwxyz}

@@ -12,7 +12,7 @@ public class SecurityUtils {
 			.getContextHolderStrategy();
 
 	private SecurityUtils() {
-		throw new IllegalStateException("Utiliti class exception");
+		throw new IllegalStateException("Utility class exception");
 	}
 
 	public static String getAuthenticatedUsername() {

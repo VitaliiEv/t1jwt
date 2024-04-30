@@ -6,19 +6,19 @@ import com.github.vitaliiev.t1jwt.repository.UserRepository;
 import com.github.vitaliiev.t1jwt.security.DefaultRoles;
 import com.github.vitaliiev.t1jwt.security.JpaUserDetailsImpl;
 import com.github.vitaliiev.t1jwt.security.SecurityUtils;
-import com.github.vitaliiev.t1jwt.service.*;
+import com.github.vitaliiev.t1jwt.service.RolesService;
+import com.github.vitaliiev.t1jwt.service.UserExistsException;
+import com.github.vitaliiev.t1jwt.service.UserService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,10 +38,6 @@ public class UserServiceImpl implements UserService {
 	private final UserRepository userRepository;
 	private final RolesService rolesService;
 	private final PasswordEncoder passwordEncoder;
-	private final GrantedAuthoritiesMapper grantedAuthoritiesMapper;
-
-	private static final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
-			.getContextHolderStrategy();
 
 	@PostConstruct
 	void init() {
@@ -49,19 +45,6 @@ public class UserServiceImpl implements UserService {
 			createUserInternal("admin", "admin", Set.of(DefaultRoles.ADMIN.name()));
 		}
 	}
-
-//	@Override
-//	@Transactional
-//	public void createUser(UserDetails user) {
-//		Assert.isTrue(!userRepository.existsByUsername(user.getUsername()), "user should not exist");
-//		Assert.hasText(user.getUsername(), "Username may not be empty or null");
-//		Assert.notNull(user.getAuthorities(), "Authorities list must not be null");
-//		User createdUser = new User();
-//		createdUser.setUsername(user.getUsername());
-//		createdUser.setPassword(user.getPassword());
-//		createdUser.setRoles(rolesService.getRoles(user.getAuthorities()));
-//		userRepository.save(createdUser);
-//	}
 
 	@Override
 	@Transactional
@@ -188,71 +171,4 @@ public class UserServiceImpl implements UserService {
 		Set<GrantedAuthority> grantedAuthorities = rolesService.toGrantedAuthorities(user.getRoles());
 		return new JpaUserDetailsImpl(user.getUsername(), user.getPassword(), grantedAuthorities);
 	}
-
-
-//	@Override
-//	@Transactional
-//	public UserDetails updatePassword(UserDetails user, String newPassword) {
-//		Assert.isTrue(userRepository.existsByUsername(user.getUsername()), "user should exist");
-//		return userRepository.findByUsername(user.getUsername())
-//				.map(u -> {
-//					u.setPassword(newPassword);
-//					return userRepository.save(u);
-//				})
-//				.map(this::createUserDetails)
-//				.orElseThrow(() -> new UsernameNotFoundException(user.getUsername()));
-//	}
-
-//	@Override
-//	@Transactional
-//	public void updateUser(UserDetails user) {
-//		userRepository.findByUsername(user.getUsername())
-//				.map(u -> {
-//					List<Role> roles = rolesService.getRoles(user.getAuthorities());
-//					u.setRoles(roles);
-//					return userRepository.save(u);
-//				})
-//				.orElseThrow(() -> new UsernameNotFoundException(user.getUsername()));
-//	}
-
-//	@Override
-//	@Transactional
-//	public void deleteUser(String username) {
-//		userRepository.deleteByUsername(username);
-//	}
-
-//	@Override
-//	@Transactional
-//	public void changePassword(String oldPassword, String newPassword) {
-//		Authentication currentUser = securityContextHolderStrategy.getContext().getAuthentication();
-//		if (currentUser == null) {
-//			// This would indicate bad coding somewhere
-//			throw new AccessDeniedException(
-//					"Can't change password as no Authentication object found in context " + "for current user.");
-//		}
-//		String username = currentUser.getName();
-//		userRepository.findByUsername(username)
-//				.map(u -> {
-//					u.setPassword(newPassword);
-//					User saved = userRepository.save(u);
-//					updateSecurityContext(currentUser, createUserDetails(saved));
-//					return saved;
-//				})
-//				.orElseThrow(() -> new UsernameNotFoundException(username));
-//	}
-
-//
-//	private void updateSecurityContext(Authentication currentAuthentication, UserDetails userDetails) {
-//		SecurityContext context = securityContextHolderStrategy.createEmptyContext();
-//		UsernamePasswordAuthenticationToken newAuthentication =
-//				UsernamePasswordAuthenticationToken.authenticated(userDetails,
-//						null, userDetails.getAuthorities());
-//		newAuthentication.setDetails(currentAuthentication.getDetails());
-//		context.setAuthentication(newAuthentication);
-//	}
-//	@Override
-//	@Transactional
-//	public boolean userExists(String username) {
-//		return userRepository.existsByUsername(username);
-//	}
 }

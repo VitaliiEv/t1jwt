@@ -5,20 +5,14 @@ import com.github.vitaliiev.t1jwt.model.User;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.userdetails.UserDetailsPasswordService;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @Validated
-public interface UserService extends UserDetailsService
-//		,
-//		UserDetailsManager,
-//		UserDetailsPasswordService
-{
+public interface UserService extends UserDetailsService {
 	User findByUsername(String username) throws UsernameNotFoundException;
 
 	Page<User> getUsers(Pageable pageable);

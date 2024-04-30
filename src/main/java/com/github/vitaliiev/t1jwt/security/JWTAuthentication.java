@@ -6,6 +6,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Collection;
+import java.util.Objects;
 
 public class JWTAuthentication extends AbstractAuthenticationToken {
 
@@ -50,5 +51,29 @@ public class JWTAuthentication extends AbstractAuthenticationToken {
 	@Override
 	public String getDetails() {
 		return (String) super.getDetails();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+
+		JWTAuthentication that = (JWTAuthentication) o;
+		return Objects.equals(principal, that.principal) && Objects.equals(credentials, that.credentials);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = super.hashCode();
+		result = 31 * result + Objects.hashCode(principal);
+		result = 31 * result + Objects.hashCode(credentials);
+		return result;
 	}
 }

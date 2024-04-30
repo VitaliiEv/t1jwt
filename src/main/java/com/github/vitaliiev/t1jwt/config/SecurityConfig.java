@@ -8,7 +8,6 @@ import com.github.vitaliiev.t1jwt.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -46,7 +45,6 @@ public class SecurityConfig {
 		DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
 		authenticationProvider.setPasswordEncoder(passwordEncoder);
 		authenticationProvider.setUserDetailsService(userService);
-//		authenticationProvider.setUserDetailsPasswordService(userService);
 		authenticationProvider.setAuthoritiesMapper(grantedAuthoritiesMapper);
 		return authenticationProvider;
 	}
@@ -79,7 +77,6 @@ public class SecurityConfig {
 				.csrf(AbstractHttpConfigurer::disable)
 				.securityMatchers(matchers -> matchers.requestMatchers("/api/v1/**", "/**"))
 				.authorizeHttpRequests(auth -> auth
-//						.requestMatchers("/api/v1/**", "/**").authenticated()
 						.requestMatchers(GET, "/api/v1/user/*", "/api/v1/user/*/role").hasAnyRole(admin, user)
 						.requestMatchers(PATCH, "/api/v1/user").hasAnyRole(admin, user)
 						.requestMatchers(POST, "/api/v1/user").hasRole(admin)

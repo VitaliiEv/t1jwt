@@ -8,6 +8,9 @@ plugins {
 group = "com.github.vitaliiev"
 version = "0.0.1-SNAPSHOT"
 
+extra["springdocOpenapiVersion"] = "2.5.0"
+extra["jjwtVersion"] = "0.12.5"
+
 java {
 	sourceCompatibility = JavaVersion.VERSION_17
 }
@@ -30,7 +33,6 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${property("springdocOpenapiVersion")}")
-
 	runtimeOnly("org.postgresql:postgresql")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:${property("jjwtVersion")}")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:${property("jjwtVersion")}")
@@ -41,6 +43,12 @@ dependencies {
 	annotationProcessor("org.projectlombok:lombok")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.testcontainers:junit-jupiter")
+	testImplementation("org.testcontainers:postgresql")
+	testImplementation("org.springframework.boot:spring-boot-testcontainers")
+	testImplementation("org.springframework.security:spring-security-test")
+	testAnnotationProcessor("org.projectlombok:lombok")
+
 }
 
 tasks.withType<Test> {

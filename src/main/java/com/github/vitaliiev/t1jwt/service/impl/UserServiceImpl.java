@@ -8,6 +8,7 @@ import com.github.vitaliiev.t1jwt.security.JpaUserDetailsImpl;
 import com.github.vitaliiev.t1jwt.security.SecurityUtils;
 import com.github.vitaliiev.t1jwt.service.RolesService;
 import com.github.vitaliiev.t1jwt.service.UserExistsException;
+import com.github.vitaliiev.t1jwt.service.UserNotFoundException;
 import com.github.vitaliiev.t1jwt.service.UserService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -16,19 +17,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,14 +37,15 @@ public class UserServiceImpl implements UserService {
 	@PostConstruct
 	void init() {
 		if (!userRepository.existsByUsername("admin")) {
-			createUserInternal("admin", "admin", Set.of(DefaultRoles.ADMIN.name()));
+			User admin = createUserInternal("admin", "admin", Set.of(DefaultRoles.ADMIN.name()));
+			userRepository.save(admin);
 		}
 	}
 
 	@Override
 	@Transactional
 	public Page<User> getUsers(Pageable pageable) {
-		return userRepository.findAll(pageable);
+		return userRepository.findAll(pageable == null ? Pageable.unpaged() : pageable);
 	}
 
 	@Override
@@ -73,7 +69,7 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional
-	public void changePassword(String oldPassword, String newPassword) throws UsernameNotFoundException {
+	public void changePassword(String oldPassword, String newPassword) throws UserNotFoundException {
 		String currentUser = SecurityUtils.getAuthenticatedUsername();
 		userRepository.findByUsername(currentUser)
 				.map(u -> {
@@ -81,37 +77,37 @@ public class UserServiceImpl implements UserService {
 						u.setPassword(passwordEncoder.encode(newPassword));
 						return userRepository.save(u);
 					} else {
-						throw new BadCredentialsException("Old password doesn't match");
+						throw new BadCredentialsException("Provided old password doesn't match current password");
 					}
 				})
-				.orElseThrow(() -> new UsernameNotFoundException(currentUser));
+				.orElseThrow(() -> new UserNotFoundException(currentUser));
 	}
 
 	@Override
 	@Transactional
-	public void delete(String username) throws UsernameNotFoundException {
+	public void delete(String username) throws UserNotFoundException {
 		if (username.equals("admin")) {
 			throw new AccessDeniedException(String.format("Cant delete default user: %s", username));
 		}
 		if (userRepository.deleteByUsername(username) != 1) {
-			throw new UsernameNotFoundException(username);
+			throw new UserNotFoundException(username);
 		}
 	}
 
 	@Override
 	@Transactional
-	public List<Role> userRole( String username) {
+	public List<Role> userRole(String username) throws UserNotFoundException {
 		return userRepository.findByUsername(username)
 				.map(User::getRoles)
-				.orElseThrow(() ->  new UsernameNotFoundException(username));
+				.orElseThrow(() -> new UserNotFoundException(username));
 	}
 
 	@Override
-	public User assignRoles(String username, List<String> names) {
+	public User assignRoles(String username, List<String> names) throws UserNotFoundException {
 		Optional<User> optionalUser = userRepository.findByUsername(username);
 		if (optionalUser.isPresent()) {
 			Set<String> normalized = names.stream()
-					.map(rolesService::normalize)
+					.map(SecurityUtils::removeRolePrefix)
 					.collect(Collectors.toCollection(HashSet::new));
 			User user = optionalUser.get();
 			List<Role> roles = user.getRoles();
@@ -124,23 +120,23 @@ public class UserServiceImpl implements UserService {
 				return userRepository.save(user);
 			}
 		} else {
-			throw new UsernameNotFoundException(username);
+			throw new UserNotFoundException(username);
 		}
 	}
 
 	@Override
 	@Transactional
-	public User revokeRoles(String username, List<String> names) {
+	public User revokeRoles(String username, List<String> names) throws UserNotFoundException {
 		Optional<User> optionalUser = userRepository.findByUsername(username);
 		if (optionalUser.isPresent()) {
 			Set<String> normalized = names.stream()
-					.map(rolesService::normalize)
+					.map(SecurityUtils::removeRolePrefix)
 					.collect(Collectors.toSet());
 			User user = optionalUser.get();
 			List<Role> roles = user.getRoles();
 			List<Role> remaining = roles.stream()
-					.filter(role -> normalized.contains(role.getName()))
-					.toList();
+					.filter(role -> !normalized.contains(role.getName()))
+					.collect(Collectors.toCollection(ArrayList::new));
 			if (roles.size() == remaining.size()) {
 				return user;
 			} else {
@@ -148,15 +144,15 @@ public class UserServiceImpl implements UserService {
 				return userRepository.save(user);
 			}
 		} else {
-			throw new UsernameNotFoundException(username);
+			throw new UserNotFoundException(username);
 		}
 	}
 
 	@Override
 	@Transactional
-	public User findByUsername(String username) throws UsernameNotFoundException {
+	public User findByUsername(String username) throws UserNotFoundException {
 		return userRepository.findByUsername(username)
-				.orElseThrow(() -> new UsernameNotFoundException(username));
+				.orElseThrow(() -> new UserNotFoundException(username));
 	}
 
 	@Override

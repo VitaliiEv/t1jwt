@@ -1,14 +1,20 @@
 package com.github.vitaliiev.t1jwt.service;
 
 import com.github.vitaliiev.t1jwt.model.RefreshToken;
-import com.github.vitaliiev.t1jwt.model.User;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PastOrPresent;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.Instant;
 import java.util.Optional;
 
+@Validated
 public interface RefreshTokenService {
 
-	RefreshToken createToken(User user, Instant createdAt);
+	@Validated
+	RefreshToken createToken(@NotBlank String username, @PastOrPresent Instant createdAt) throws UsernameNotFoundException;
 
-	Optional<RefreshToken> findByUsername(String username);
+	@Validated
+	Optional<RefreshToken> findByUsername(@NotBlank String username);
 }

@@ -1,9 +1,9 @@
 package com.github.vitaliiev.t1jwt.service.impl;
 
-import com.github.vitaliiev.t1jwt.T1jwtException;
 import com.github.vitaliiev.t1jwt.model.Role;
 import com.github.vitaliiev.t1jwt.repository.RoleRepository;
 import com.github.vitaliiev.t1jwt.security.DefaultRoles;
+import com.github.vitaliiev.t1jwt.security.SecurityUtils;
 import com.github.vitaliiev.t1jwt.service.RoleExistsException;
 import com.github.vitaliiev.t1jwt.service.RoleNotFoundException;
 import com.github.vitaliiev.t1jwt.service.RolesService;
@@ -19,7 +19,6 @@ import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMap
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,7 +30,6 @@ public class RolesServiceImpl implements RolesService {
 
 	private final RoleRepository roleRepository;
 	private final GrantedAuthoritiesMapper grantedAuthoritiesMapper;
-	private static final String ROLE_PREFIX = "ROLE_";
 
 	@PostConstruct
 	public void init() {
@@ -46,7 +44,7 @@ public class RolesServiceImpl implements RolesService {
 	@Override
 	@Transactional
 	public Role createRole(String roleName) throws RoleExistsException {
-		String trimmedRoleName = normalize(roleName);
+		String trimmedRoleName = SecurityUtils.removeRolePrefix(roleName);
 		Role role = createRoleInternal(trimmedRoleName);
 		if (roleRepository.exists(Example.of(role))) {
 			throw new RoleExistsException(trimmedRoleName);
@@ -58,18 +56,20 @@ public class RolesServiceImpl implements RolesService {
 	@Override
 	@Transactional
 	public Role getRole(String roleName) throws RoleNotFoundException {
-		return roleRepository.findByName(roleName)
-				.orElseThrow(() -> new RoleNotFoundException(roleName));
+		String trimmedRoleName = SecurityUtils.removeRolePrefix(roleName);
+		return roleRepository.findByName(trimmedRoleName)
+				.orElseThrow(() -> new RoleNotFoundException(trimmedRoleName));
 	}
 
 	@Override
 	@Transactional
 	public void deleteRole(String roleName) throws RoleNotFoundException {
-		if (roleName.equals(DefaultRoles.ADMIN.name()) || roleName.equals(DefaultRoles.USER.name())) {
-			throw new AccessDeniedException(String.format("Cant delete default role: %s", roleName));
+		String trimmedRoleName = SecurityUtils.removeRolePrefix(roleName);
+		if (trimmedRoleName.equals(DefaultRoles.ADMIN.name()) || trimmedRoleName.equals(DefaultRoles.USER.name())) {
+			throw new AccessDeniedException(String.format("Cant delete default role: %s", trimmedRoleName));
 		}
-		if (roleRepository.deleteByName(roleName) != 1) {
-			throw new RoleNotFoundException(roleName);
+		if (roleRepository.deleteByName(trimmedRoleName) != 1) {
+			throw new RoleNotFoundException(trimmedRoleName);
 		}
 	}
 
@@ -78,46 +78,12 @@ public class RolesServiceImpl implements RolesService {
 	public Page<Role> getRoles(Pageable pageable) {
 		return roleRepository.findAll(pageable);
 	}
-//
-//	private List<Role> createRolesInternal(Set<String> roleNames) {
-//		Set<String> trimmedRoleNames = roleNames.stream()
-//				.map(this::removePrefix)
-//				.collect(Collectors.toSet());
-//		List<Role> found = roleRepository.findByNames(trimmedRoleNames);
-//		if (trimmedRoleNames.size() != found.size()) {
-//			Set<String> notFound = new HashSet<>(trimmedRoleNames);
-//			found.forEach(r -> notFound.remove(r.getName()));
-//			List<Role> created = notFound.stream()
-//					.map(this::createRoleInternal)
-//					.toList();
-//			List<Role> saved = roleRepository.saveAll(created);
-//			return Stream.concat(found.stream(), saved.stream())
-//					.toList();
-//		}
-//		return Collections.unmodifiableList(found);
-//	}
 
 	@Override
 	@Transactional
 	public List<Role> getRoles(Set<String> roleNames) throws RoleNotFoundException {
 		Set<String> trimmedRoleNames = roleNames.stream()
-				.map(this::normalize)
-				.collect(Collectors.toSet());
-		List<Role> found = roleRepository.findByNames(trimmedRoleNames);
-		if (trimmedRoleNames.size() != found.size()) {
-			Set<String> notFound = new HashSet<>(trimmedRoleNames);
-			found.forEach(r -> notFound.remove(r.getName()));
-			throw new RoleNotFoundException(notFound);
-		}
-		return found;
-	}
-
-	@Override
-	@Transactional
-	public List<Role> getRoles(Collection<? extends GrantedAuthority> authorities) throws RoleNotFoundException {
-		Set<String> trimmedRoleNames = authorities.stream()
-				.map(GrantedAuthority::getAuthority)
-				.map(this::normalize)
+				.map(SecurityUtils::removeRolePrefix)
 				.collect(Collectors.toSet());
 		List<Role> found = roleRepository.findByNames(trimmedRoleNames);
 		if (trimmedRoleNames.size() != found.size()) {
@@ -136,17 +102,6 @@ public class RolesServiceImpl implements RolesService {
 				.map(SimpleGrantedAuthority::new)
 				.collect(Collectors.toSet());
 		return Set.copyOf(grantedAuthoritiesMapper.mapAuthorities(authorities));
-	}
-
-	@Override
-	public String normalize(String roleName) {
-		if (roleName.equals(ROLE_PREFIX)) {
-			throw new T1jwtException("Illegal role name: " + roleName);
-		} else if (roleName.startsWith(ROLE_PREFIX)) {
-			return roleName.substring(ROLE_PREFIX.length()).toUpperCase();
-		} else {
-			return roleName.toUpperCase();
-		}
 	}
 
 	private Role createRoleInternal(String name) {

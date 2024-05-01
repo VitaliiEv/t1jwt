@@ -1,7 +1,7 @@
 package com.github.vitaliiev.t1jwt.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,7 +22,7 @@ public class User {
 	private UUID id;
 
 	@NotNull
-	@NotEmpty
+	@NotBlank
 	@Column(nullable = false, updatable = false, unique = true)
 	private String username;
 

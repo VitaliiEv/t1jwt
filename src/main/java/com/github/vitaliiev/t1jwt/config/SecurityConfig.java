@@ -5,6 +5,8 @@ import com.github.vitaliiev.t1jwt.security.JWTAuthenticationProvider;
 import com.github.vitaliiev.t1jwt.security.JWTConfigurer;
 import com.github.vitaliiev.t1jwt.service.TokenValidatorService;
 import com.github.vitaliiev.t1jwt.service.UserService;
+import org.springdoc.core.properties.SpringDocConfigProperties;
+import org.springdoc.core.properties.SwaggerUiConfigParameters;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -59,8 +61,7 @@ public class SecurityConfig {
 
 	@Bean
 	@Order(1)
-	public SecurityFilterChain authFilterChain2(HttpSecurity http) throws Exception {
-
+	public SecurityFilterChain authFilterChain(HttpSecurity http) throws Exception {
 		return http
 				.csrf(AbstractHttpConfigurer::disable)
 				.securityMatchers(matchers -> matchers.requestMatchers("/api/v1/auth/**"))
@@ -70,6 +71,21 @@ public class SecurityConfig {
 
 	@Bean
 	@Order(2)
+	public SecurityFilterChain swaggerFilterChain(HttpSecurity http,
+	                                              SpringDocConfigProperties springDocConfigProperties,
+	                                              SwaggerUiConfigParameters swaggerUiConfigParameters) throws Exception {
+		String apiDocsPath = springDocConfigProperties.getApiDocs().getPath() + "/**";
+		String uiPath = swaggerUiConfigParameters.getPath();
+		String[] swaggerMatchers = {apiDocsPath, uiPath, "/swagger-ui/**", "/favicon.ico", "/sw**.js"};
+		return http
+				.csrf(AbstractHttpConfigurer::disable)
+				.securityMatchers(matchers -> matchers.requestMatchers(swaggerMatchers))
+				.authorizeHttpRequests(auth -> auth.requestMatchers(swaggerMatchers).permitAll())
+				.build();
+	}
+
+	@Bean
+	@Order(3)
 	public SecurityFilterChain apiFilterChain(HttpSecurity http, AuthenticationProvider jwtAuthenticationProvider) throws Exception {
 		String admin = DefaultRoles.ADMIN.name();
 		String user = DefaultRoles.USER.name();

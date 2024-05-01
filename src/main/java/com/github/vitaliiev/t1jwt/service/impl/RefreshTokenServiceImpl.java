@@ -4,7 +4,9 @@ import com.github.vitaliiev.t1jwt.model.RefreshToken;
 import com.github.vitaliiev.t1jwt.model.User;
 import com.github.vitaliiev.t1jwt.repository.RefreshTokenRepository;
 import com.github.vitaliiev.t1jwt.service.RefreshTokenService;
+import com.github.vitaliiev.t1jwt.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +18,12 @@ import java.util.Optional;
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 
 	private final RefreshTokenRepository repository;
+	private final UserService userService;
 
-	@Transactional
 	@Override
-	public RefreshToken createToken(User user, Instant createdAt) {
+	@Transactional
+	public RefreshToken createToken(String username, Instant createdAt)  throws UsernameNotFoundException {
+		User user = userService.findByUsername(username);
 		repository.deleteByUser(user);
 		RefreshToken refreshToken = new RefreshToken();
 		refreshToken.setUser(user);

@@ -1,29 +1,33 @@
 package com.github.vitaliiev.t1jwt.service;
 
 import com.github.vitaliiev.t1jwt.model.Role;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.validation.annotation.Validated;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+@Validated
 public interface RolesService {
 
-	Role createRole(String roleName) throws RoleExistsException;
+	@Validated
+	Role createRole(@NotBlank String roleName) throws RoleExistsException;
 
-	Role getRole(String roleName) throws RoleNotFoundException;
+	@Validated
+	Role getRole(@NotBlank String roleName) throws RoleNotFoundException;
 
 	Page<Role> getRoles(Pageable pageable);
 
-	void deleteRole(String roleName) throws RoleNotFoundException;
+	@Validated
+	void deleteRole(@NotBlank String roleName) throws RoleNotFoundException;
 
-	List<Role> getRoles(Set<String> roleNames) throws RoleNotFoundException;
+	@Validated
+	List<Role> getRoles(@Size(max = 10) Set<String> roleNames) throws RoleNotFoundException;
 
-	List<Role> getRoles(Collection<? extends GrantedAuthority> authorities) throws RoleNotFoundException;
-
-	Set<GrantedAuthority> toGrantedAuthorities(List<Role> roles);
-
-	String normalize(String roleName);
+	@Validated
+	Set<GrantedAuthority> toGrantedAuthorities(@Size(max = 10) List<Role> roles);
 }

@@ -1,14 +1,14 @@
 openapi: 3.0.3
 info:
-  title: User management API
-  description: User management API
+  title: 'User management API'
+  description: 'User management API'
   version: 0.0.1
 servers:
   - url: 'http://localhost:8080/api/v1'
     description: Development server
 
 tags:
-  - name: Authentication
+  - name: aAuthentication
     description: Аутентификация
   - name: Users
     description: Управление пользователями
@@ -289,7 +289,7 @@ components:
     rolename:
       name: rolename
       in: path
-      description: Имя роля
+      description: Имя роли
       required: true
       schema:
         type: string

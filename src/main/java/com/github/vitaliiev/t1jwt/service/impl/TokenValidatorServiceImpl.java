@@ -6,6 +6,7 @@ import com.github.vitaliiev.t1jwt.service.TokenValidatorService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -13,6 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.function.UnaryOperator;
+
+import static com.github.vitaliiev.t1jwt.security.SecurityUtils.*;
+import static com.github.vitaliiev.t1jwt.security.SecurityUtils.SCOPE_CLAIM;
 
 @Service
 public class TokenValidatorServiceImpl implements TokenValidatorService {
@@ -33,7 +37,15 @@ public class TokenValidatorServiceImpl implements TokenValidatorService {
 	public Jws<Claims> verifyAccessToken(String accessToken) throws JwtException {
 		Jws<Claims> jws = jwtParser.parseSignedClaims(accessToken);
 		String username = jws.getPayload().getSubject();
-		return verifyInternal(accessToken, builder -> builder.requireSubject(username));
+		Jws<Claims> claimsJws = verifyInternal(accessToken, builder -> builder.requireSubject(username));
+		String string = claimsJws.getPayload().get(SCOPE_CLAIM, String.class);
+		for (GrantedAuthority grantedAuthority : parseJwtScopes(string, null)) {
+			String authority = grantedAuthority.getAuthority();
+			if (removeRolePrefix(authority).equals(REFRESH_SCOPE)) {
+				throw new BadCredentialsException("Refresh token passed instead of access token");
+			}
+		}
+		return claimsJws;
 	}
 
 	@Override
